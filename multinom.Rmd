@@ -1,0 +1,99 @@
+---
+title: "MULTINOMIAL LOGISTIC REGRESSION"
+author: "evenif"
+date: "8/16/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(gtsummary)
+library(nnet)
+```
+
+```{r}
+# Loading the library
+library(rattle.data)
+# Loading the wine data
+data(wine)
+```
+
+```{r}
+# Checking the structure of wine dataset
+str(wine)
+```
+## We now split the dataset into train and test using "sample_frac()" function from {dplyr} package
+
+```{r}
+# Using sample_frac to create 70 - 30 slipt into test and train
+train <- sample_frac(wine, 0.7)
+sample_id <- as.numeric(rownames(train)) # rownames() returns character so as.numeric
+test <- wine[-sample_id,]
+```
+## Remember when we build logistic models we need to set one of the levels of the dependent variable as a baseline. We achieve this by using relevel() function. Making "3" the reference level here
+```{r}
+# Setting the basline 
+train$Type <- relevel(train$Type, ref = "3")
+```
+## Once the baseline has been specified, we use multinom() function to fit the model and then use summary() function to explore the beta coefficients of the model.
+## We shall use -1 in the formula to delete the intercept. We think that it does not make sense in the model and so we remove it.
+```{r}
+# Training the multinomial model
+multinom.fit <- multinom(Type ~ Alcohol + Color -1, data = train)
+ 
+# Checking the model
+summary(multinom.fit)
+```
+The output of summary contains the table for coefficients and a table for standard error. Each row in the coefficient table corresponds to the model equation. The first row represents the coefficients for Type 2 wine in comparison to our baseline which is Type 3 wine and the second row represents the coefficients for Type 2 wine in comparison to our baseline which is Type 3 wine.
+
+## This ratio of the probability of choosing Type 2 wine over the baseline that is Type 3 wine is referred to as relative risk (often described as odds). However, the output of the model is the log of odds. To get the relative risk IE odds ratio, we need to exponentiate the coefficients.
+```{r}
+## extracting coefficients from the model and exponentiate
+exp(coef(multinom.fit))
+```
+
+## We will now check the model accuracy by building classification table. So let us first build the classification table for training dataset and calculate the model accuracy
+
+```{r}
+# Predicting the values for train dataset
+train$precticed <- predict(multinom.fit, newdata = train, "class")
+ 
+# Building classification table
+ctable <- table(train$Type, train$precticed)
+ 
+# Calculating accuracy - sum of diagonal elements divided by total obs
+round((sum(diag(ctable))/sum(ctable))*100,2)
+```
+
+## Accuracy in training dataset is 68.8%. We now repeat the above on the unseen dataset that tests dataset
+```{r}
+# Predicting the values for train dataset
+test$precticed <- predict(multinom.fit, newdata = test, "class")
+
+# Building classification table
+ctable <- table(test$Type, test$precticed)
+
+# Calculating accuracy - sum of diagonal elements divided by total obs
+round((sum(diag(ctable))/sum(ctable))*100,2)
+```
+
+The accuracy of the test dataset turns out to be 18.4% less as compared to training dataset. So we have a problem of overfitting here. Despite what accuracy we get the process of building the multinomial logistic regression remains the same.
+
+WHAT NEXT?
+Next, we suggest you solve this problem by achieving better results and solving the overfitting problem. To start with trying the following checks –
+
+1. Look for multicollinearity.
+
+If it exists – a. Remove variable or b. Run factor analysis
+
+2. Check for outliers and do the necessary treatment.
+
+3. Try different data transformations for independent variables.
+
+Do share your final results in the comments below. In case you have further queries feel free to initiate the discussion. I would be happy to help you

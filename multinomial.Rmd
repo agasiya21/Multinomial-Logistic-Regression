@@ -1,0 +1,59 @@
+---
+title: "MULTINOMIAL LOGISTIC REGRESSION"
+author: "evenif"
+date: "8/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(haven)
+library(tidyverse)
+library(gtsummary)
+library(nnet)
+```
+
+## Multinomial logistic regression
+This is the regression you use when you have an unordered categorical variable outcome or an ordered categorical variable outcome that failed the Brant test.
+```{r}
+# Read in data
+mdata <- read_dta("https://stats.idre.ucla.edu/stat/data/hsbdemo.dta")
+str(mdata)
+```
+There are a bunch of variables in this dataset, but we only care about three: prog, ses, and write. The first, prog is a categorical variable indicating what type of program a student is in: “General” (1), “Academic” (2), or “Vocational” (3). The ses variable is a categorical variable indicating someone’s socioeconomic class: “Low” (1), “Middle” (2), and “High” (3). The write variable is their score on a writing test.
+
+To begin, let’s format our categorical variables as factor variables. This should generally be a first step if you have categorical data that is set up as numbers.
+```{r}
+# Format categorical variables
+mdata$prog <- factor(mdata$prog)
+mdata$ses <- factor(mdata$ses)
+```
+Remember, multinomial logistic regression reports the odds of being in the different outcome categories in reference to some base group. So while we want to model the outcome prog on the independent variables ses and write, because there are three levels to prog, it will report two different sets of regression results corresponding to the following two models.
+So first, you have to set your base group. You do this using the relevel() function and the ref argument, which stands for “reference group.”
+```{r}
+# Set the reference group for prog to be 1
+mdata$prog <- relevel(mdata$prog, ref=1)
+```
+
+Now, we can go ahead and run our model using the multinom() command, which is in the nnet package. It has the same structure as basically all of the other modeling functions we’ve seen so far.
+```{r}
+model <- multinom(prog ~ ses + write, data=mdata)
+summary(model)
+```
+
+## For ODDs Ratios
+
+```{r}
+exp(coef(model))
+```
+
+## z-value
+
+```{r}
+zvalues <- summary(model)$coefficients/summary(model)$std.error*2
+
+```
+
